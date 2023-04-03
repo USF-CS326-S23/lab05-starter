@@ -1,4 +1,10 @@
+#define DEBUG 0
+#define debug_print(fmt, ...) \
+    do { if (DEBUG) fprintf(2, "%s:%d:%s(): " fmt, __FILE__, \
+         __LINE__, __func__, __VA_ARGS__); } while (0)
+
 struct stat;
+struct uproc;
 
 // system calls
 int fork(void);
@@ -22,6 +28,9 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+long sbrksz(void);
+void sname(const char*);
+int uproc(int, struct uproc*);
 
 // ulib.c
 int stat(const char*, struct stat*);
@@ -34,8 +43,13 @@ void printf(const char*, ...);
 char* gets(char*, int max);
 uint strlen(const char*);
 void* memset(void*, int, uint);
-void* malloc(uint);
-void free(void*);
 int atoi(const char*);
 int memcmp(const void *, const void *, uint);
 void *memcpy(void *, const void *, uint);
+
+void* malloc(uint);
+void* malloc_name(uint, const char*);
+void free(void*);
+void myfree(void*);
+void malloc_print(void);
+void malloc_summary(void);

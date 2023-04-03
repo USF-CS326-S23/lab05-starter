@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "uproc.h"
 
 struct cpu cpus[NCPU];
 
@@ -145,6 +146,9 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
+
+  p->nsched = 0;
+  p->nticks = 0;
 
   return p;
 }
@@ -459,12 +463,15 @@ scheduler(void)
         // to release its lock and then reacquire it
         // before jumping back to us.
         p->state = RUNNING;
+        p->nsched += 1;
         c->proc = p;
+        
         swtch(&c->context, &p->context);
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
+
       }
       release(&p->lock);
     }
@@ -680,4 +687,33 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+int
+uproc(int pid, uint64 up_p)
+{
+  struct proc *myp = myproc();
+  struct proc *p;
+  struct uproc up;
+  int rv = -1;
+  
+  // Find proc struct for pid
+  for(p = proc; p < &proc[NPROC]; p++){
+    if(p->state != UNUSED && p->pid == pid){
+      acquire(&p->lock);
+      up.pid = p->pid;
+      up.state = p->state;
+      up.sz = p->sz;
+      strncpy(up.name, p->name, 16);
+      up.nsched = p->nsched;
+      up.nticks = p->nticks;
+      release(&p->lock);
+      if(copyout(myp->pagetable, up_p, (char *)&up, sizeof(up)) < 0)
+        return -1;
+      rv = pid;
+      break;
+    }
+  }
+
+  return rv;
 }

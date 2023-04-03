@@ -89,3 +89,33 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_sbrksz(void)
+{
+  return myproc()->sz;
+}
+
+uint64
+sys_sname(void)
+{
+  struct proc *p = myproc();
+  uint64 name_p;
+
+  argaddr(0, &name_p);
+  if(copyin(p->pagetable, p->name, name_p, 16) < 0)
+    return -1;
+  return 0;
+}
+    
+
+uint64
+sys_uproc(void)
+{
+  uint64 up_p;  // user pointer to struct uproc
+  int pid;
+
+  argint(0, &pid);
+  argaddr(1, &up_p);
+  return uproc(pid, up_p);
+}
